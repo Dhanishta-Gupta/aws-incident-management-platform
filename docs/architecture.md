@@ -107,7 +107,7 @@ The following components have been implemented and tested:
 
 - Amazon EC2 instance
 - Amazon CloudWatch monitoring
-- CloudWatch Agent installed on the EC2 instance for additional system metrics and log collection; configuration and verification are in progress.
+- CloudWatch Agent installed on the EC2 instance for additional system-level monitoring and log collection. The current incident-detection workflow uses the standard EC2 CPUUtilization metric provided by CloudWatch.
 - `Incident-High-CPU` CloudWatch alarm
 - Amazon SNS notification topic
 - Email notification subscription
