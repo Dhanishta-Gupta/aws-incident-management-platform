@@ -2,50 +2,135 @@
 
 ## Overview
 
-The AWS Incident Management Platform is designed to detect cloud incidents, notify operators, automatically record incident information, and support incident investigation and recovery verification.
+The AWS Incident Management Platform is designed to detect infrastructure incidents, notify operators, automatically record incident information, and support incident investigation and recovery verification.
 
 The current implementation monitors an Amazon EC2 instance for high CPU utilization and processes the resulting incident through Amazon CloudWatch, Amazon SNS, AWS Lambda, and Amazon S3.
 
+The architecture is designed to separate monitoring, notification, incident processing, and incident storage responsibilities.
+
 ## Architecture
 
-```text
-                         +------------------+
-                         |   Amazon EC2     |
-                         | Monitoring Server|
-                         +--------+---------+
-                                  |
-                                  | CPUUtilization
-                                  v
-                         +------------------+
-                         | Amazon CloudWatch|
-                         +--------+---------+
-                                  |
-                                  | CPU > 70%
-                                  v
-                         +------------------+
-                         | CloudWatch Alarm |
-                         | Incident-High-CPU|
-                         +--------+---------+
-                                  |
-                                  v
-                         +------------------+
-                         |   Amazon SNS     |
-                         | incident-alerts  |
-                         +--------+---------+
-                                  |
-                    +-------------+-------------+
-                    |                           |
-                    v                           v
-             +-------------+             +-------------+
-             |    Email    |             | AWS Lambda  |
-             | Notification|             | Incident   |
-             +-------------+             | Handler    |
-                                          +------+------+
-                                                 |
-                                                 | PutObject
-                                                 v
-                                          +-------------+
-                                          | Amazon S3   |
-                                          | Incident    |
-                                          | JSON Records|
-                                          +-------------+
+    +-----------------------+
+    |     Amazon EC2        |
+    |     EC2 Instance      |
+    +-----------+-----------+
+                |
+                | CPUUtilization metric
+                v
+    +-----------------------+
+    |   Amazon CloudWatch   |
+    |   Metrics & Monitoring|
+    +-----------+-----------+
+                |
+                | CPU > 70%
+                v
+    +-----------------------+
+    |   CloudWatch Alarm    |
+    |  Incident-High-CPU    |
+    +-----------+-----------+
+                |
+                | Alarm notification
+                v
+    +-----------------------+
+    |      Amazon SNS       |
+    |   Incident Topic      |
+    +-----------+-----------+
+                |
+          +-----+-----+
+          |           |
+          v           v
+    +-----------+  +-------------------+
+    |   Email   |  |    AWS Lambda     |
+    |Notification| | Incident Handler |
+    +-----------+  +---------+---------+
+                              |
+                              | PutObject
+                              v
+                    +-------------------+
+                    |     Amazon S3     |
+                    | Incident Records  |
+                    |      (JSON)       |
+                    +-------------------+
+
+## Incident Flow
+
+The current incident-processing workflow follows these steps:
+
+1. Amazon EC2 generates CPU utilization metrics.
+2. Amazon CloudWatch collects and evaluates the CPU utilization metric.
+3. The `Incident-High-CPU` CloudWatch alarm enters the `ALARM` state when CPU utilization exceeds the configured 70% threshold.
+4. The CloudWatch alarm publishes an incident notification to an Amazon SNS topic.
+5. Amazon SNS delivers the notification to the configured email subscription.
+6. Amazon SNS also invokes the subscribed AWS Lambda function.
+7. AWS Lambda processes the incident event and generates a structured incident record.
+8. AWS Lambda stores the incident record as a JSON object in Amazon S3.
+9. Operators can investigate the incident using CloudWatch, EC2 system information, and the incident response runbook.
+10. Recovery is verified by confirming that the monitored resource and CloudWatch alarm return to a healthy state.
+
+---
+
+## AWS Service Responsibilities
+
+### Amazon EC2
+
+Provides the compute environment monitored by the platform. The current incident scenario focuses on high CPU utilization.
+
+### Amazon CloudWatch
+
+Collects and evaluates EC2 monitoring metrics and provides the alarm mechanism used to detect high CPU utilization.
+
+### CloudWatch Alarm
+
+Evaluates the configured CPU threshold and changes state when the monitored condition is met. The current alarm is named `Incident-High-CPU`.
+
+### Amazon SNS
+
+Acts as the notification and event-distribution layer. It delivers the alarm notification through email and forwards the incident event to AWS Lambda.
+
+### AWS Lambda
+
+Processes the SNS incident event and generates a structured incident record containing information about the detected incident.
+
+### Amazon S3
+
+Provides durable storage for structured incident records generated by AWS Lambda.
+
+### AWS IAM
+
+Controls access between AWS services and resources using roles and permissions. The EC2 instance uses an IAM role rather than storing long-term AWS access keys on the instance.
+
+---
+
+## Current Architecture Status
+
+The following components have been implemented and tested:
+
+- Amazon EC2 instance
+- Amazon CloudWatch monitoring
+- CloudWatch Agent installed on the EC2 instance for additional system metrics and log collection; configuration and verification are in progress.
+- `Incident-High-CPU` CloudWatch alarm
+- Amazon SNS notification topic
+- Email notification subscription
+- SNS-to-Lambda event processing
+- AWS Lambda incident processing
+- Amazon S3 incident record storage
+- Structured JSON incident records
+- Incident response runbook
+- Recovery verification procedure
+
+The current implementation primarily demonstrates high CPU incident detection and processing. CloudWatch Agent is being configured to extend system-level monitoring and log collection.
+
+Automatic incident resolution, additional monitoring scenarios, automated remediation, and Infrastructure as Code are planned as future enhancements.
+
+## Future Architecture Enhancements
+
+The architecture may be extended with:
+
+- Additional CPU, memory, disk, and application monitoring.
+- CloudWatch Logs and log-based alarms.
+- Automatic incident resolution using recovery events.
+- AWS Systems Manager for operational troubleshooting.
+- Automated remediation for selected incident types.
+- Incident dashboards and reporting.
+- Infrastructure as Code using AWS CloudFormation or Terraform.
+- Additional IAM and security controls.
