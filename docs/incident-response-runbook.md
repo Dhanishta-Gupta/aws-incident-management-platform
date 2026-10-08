@@ -334,16 +334,16 @@ For every significant incident, record:
 
 Example:
 
-Incident ID: INC-001  
-Date: YYYY-MM-DD  
-Time: HH:MM  
-Severity: High  
-Resource: EC2 instance  
-Alarm: High CPU Utilization  
-Symptom: CPU exceeded configured threshold  
-Investigation: Identified high CPU-consuming process  
-Remediation: Investigated and stopped the unnecessary process  
-Recovery: CPU returned below threshold  
+Incident ID: <incident-id>
+Date: YYYY-MM-DD
+Time: HH:MM
+Severity: High
+Resource: EC2 instance
+Alarm: Incident-High-CPU
+Symptom: CPU exceeded configured threshold
+Investigation: Identified high CPU-consuming process
+Remediation: Investigated and stopped the unnecessary process
+Recovery: CPU returned below threshold
 Status: Resolved
 
 ---
@@ -409,12 +409,16 @@ The objective of the post-incident review is to reduce the likelihood and impact
 The current incident-management workflow is based on the following AWS components:
 
 - **Amazon EC2** — compute resource being monitored.
-- **Amazon CloudWatch** — collects metrics and evaluates alarms.
-- **Amazon SNS** — distributes incident notifications.
-- **Amazon CloudWatch Logs** — stores and provides access to collected logs.
+- **Amazon CloudWatch** — collects EC2 metrics and evaluates alarms.
+- **CloudWatch Alarm** — detects high CPU utilization based on the configured threshold.
+- **Amazon SNS** — distributes incident notifications to email and AWS Lambda.
+- **AWS Lambda** — processes incident events and generates structured incident records.
+- **Amazon S3** — stores incident records as JSON objects.
 - **AWS IAM** — controls access to AWS resources.
 
-The architecture can be expanded later with additional automation such as AWS Lambda, AWS Systems Manager, and automated remediation workflows.
+The CloudWatch Agent has also been installed on the EC2 instance for additional system-level monitoring and log collection. The current incident-detection workflow uses the standard EC2 `CPUUtilization` metric provided by CloudWatch.
+
+The architecture can be expanded later with additional automation such as AWS Systems Manager, automated remediation, and Infrastructure as Code.
 
 ---
 
