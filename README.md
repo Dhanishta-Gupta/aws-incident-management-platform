@@ -20,28 +20,27 @@ The platform is designed to:
 
 The current incident flow is:
 
-```text
-EC2 Instance
-     |
-     | CPUUtilization
-     v
-Amazon CloudWatch
-     |
-     | Alarm: CPU > 70%
-     v
-CloudWatch Alarm
-     |
-     v
-Amazon SNS
-   /     \
-  /       \
-Email    AWS Lambda
-             |
-             v
-          Amazon S3
-             |
-             v
-      Incident JSON Record
+    EC2 Instance
+         |
+         | CPUUtilization
+         v
+    Amazon CloudWatch
+         |
+         | Alarm: CPU > 70%
+         v
+    CloudWatch Alarm
+         |
+         v
+    Amazon SNS
+       /     \
+      /       \
+    Email    AWS Lambda
+                 |
+                 v
+              Amazon S3
+                 |
+                 v
+          Incident JSON Record
 
 ---
 
