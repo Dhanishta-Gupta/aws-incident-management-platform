@@ -76,40 +76,60 @@ Controls access to AWS resources using roles and permissions. IAM roles are used
 
 The incident-management workflow follows these stages:
 
+### 1. Incident Detection
+
 1. The EC2 instance generates infrastructure metrics.
-2. Amazon CloudWatch collects and evaluates the metrics.
-3. The `Incident-High-CPU` CloudWatch alarm enters the `ALARM` state when CPU utilization exceeds the configured threshold.
-4. Amazon SNS receives the alarm notification and sends an email notification.
-5. SNS also invokes the AWS Lambda function.
-6. Lambda processes the incident event.
-7. Lambda creates a structured incident record in Amazon S3.
-8. The operator investigates the affected EC2 instance using CloudWatch metrics, logs, and system-level troubleshooting.
-9. Appropriate remediation is performed.
-10. Recovery is verified by checking the system and monitoring state.
-11. The incident can then be documented and reviewed.
+2. Amazon CloudWatch monitors CPU utilization.
+3. The `Incident-High-CPU` alarm enters the `ALARM` state when CPU utilization exceeds the configured 70% threshold.
+
+### 2. Incident Notification and Creation
+
+4. Amazon SNS receives the CloudWatch alarm notification.
+5. SNS sends an email notification and invokes the AWS Lambda function.
+6. Lambda processes the alarm event and extracts relevant incident details.
+7. Lambda creates a structured JSON incident record in Amazon S3 with an `OPEN` status.
+8. Lambda stores an active-incident reference to help identify repeated notifications for the same alarm and instance.
+
+### 3. Duplicate Notification Handling
+
+9. If another `ALARM` notification arrives while an incident is already active, Lambda checks the active-incident reference and reuses the existing incident instead of creating another one.
+
+### 4. Recovery and Resolution
+
+10. When the CloudWatch alarm returns to the `OK` state, SNS sends the recovery notification to Lambda.
+11. Lambda locates the active incident and updates the existing S3 record to `RESOLVED`.
+12. Lambda adds resolution details and removes the active-incident reference.
+
+### 5. Investigation and Review
+
+13. The operator investigates the affected EC2 instance using available CloudWatch metrics and system logs.
+14. Appropriate remediation is performed, and recovery is verified.
+15. The incident record can be reviewed for investigation, documentation, and operational learning.
+
+**Note:** Incident creation, duplicate handling, and recovery logic have been tested using simulated Lambda events. Full live end-to-end validation of the latest code remains pending.
 
 ---
 
-## Verified Test Result
+## Verified Test Results
 
-The end-to-end incident-processing workflow was tested using the project environment.
+The project has been tested incrementally using both AWS resources and simulated Lambda events.
 
-A test incident was sent through the SNS → Lambda workflow, and the Lambda function successfully processed the event and created a structured JSON incident record in Amazon S3.
+### Monitoring and Alerting
 
-The generated test incident included fields such as:
+- Configured the `Incident-High-CPU` CloudWatch alarm to detect EC2 CPU utilization above 70%.
+- Generated high CPU utilization and verified that the alarm entered the `ALARM` state.
+- Verified that the alarm returned to the `OK` state after the CPU workload stopped.
 
-- Incident ID
-- Severity
-- Source
-- Alert
-- Incident message
-- Status
+### Incident Processing and Recovery
 
-The test incident was successfully stored with an `OPEN` status.
+Simulated SNS alarm events were used to test the Lambda incident-processing logic:
 
-The project also includes a CloudWatch alarm named `Incident-High-CPU`, configured to detect CPU utilization above 70%.
+- **Incident creation:** Created a structured JSON incident record in S3 with an `OPEN` status.
+- **Duplicate handling:** Verified that a repeated notification for an active incident reused the existing incident ID.
+- **Recovery handling:** Verified that a recovery event updated the same incident record to `RESOLVED`, added resolution details, and removed its active-incident reference.
+- **Recovery without an active incident:** The function is designed to handle this scenario; further verification is planned.
 
-The alarm and incident-processing components were tested to verify the monitoring and automation workflow.
+**Testing limitation:** The latest recovery and duplicate-handling changes have been tested using simulated Lambda events. A complete live end-to-end test of the latest code through CloudWatch → SNS → Lambda → S3 remains to be completed.
 
 ---
 
@@ -159,21 +179,24 @@ The project is being developed incrementally as a practical CloudOps learning pr
 - Ubuntu EC2 instance deployment.
 - IAM role-based access for the EC2 environment.
 - Amazon S3 bucket for incident records.
-- CloudWatch monitoring setup.
-- `Incident-High-CPU` CloudWatch alarm.
+- CloudWatch monitoring and the `Incident-High-CPU` alarm.
 - SNS-based incident notification workflow.
-- Email notification for incident alerts.
+- Email notifications for incident alerts.
 - AWS Lambda incident-processing workflow.
-- Lambda-generated structured incident records in Amazon S3.
+- Structured JSON incident records stored in Amazon S3.
+- Incident lifecycle handling, including `OPEN` and `RESOLVED` statuses.
+- Duplicate notification handling for an already-active incident.
+- Removal of the active-incident reference after successful incident resolution.
+- Simulated Lambda tests for incident creation, duplicate handling, and recovery.
 - Incident response runbook.
 - Git and GitHub-based project version control.
 
 ### In Progress
 
-- CloudWatch Agent configuration for additional EC2 monitoring and log collection.
-- Improving the structure and quality of automatically generated incident records.
-- Adding recovery-event handling so incidents can transition from `OPEN` to `RESOLVED`.
-- Further monitoring, notification, and incident-record integration.
+- Full live end-to-end validation of the latest Lambda code through CloudWatch → SNS → Lambda → S3.
+- CloudWatch Agent configuration for additional EC2 metrics and log collection.
+- Further improvements to incident-record quality and error handling.
+- Additional monitoring, security, and operational improvements.
 
 ---
 
