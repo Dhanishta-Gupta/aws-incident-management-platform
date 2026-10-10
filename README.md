@@ -211,15 +211,18 @@ The project is being developed incrementally as a practical CloudOps learning pr
 
 ## Future Enhancements
 
-Future iterations of the project may include:
+Potential improvements for future iterations of the project include:
 
-- Automatic incident resolution based on CloudWatch recovery events.
 - Additional CloudWatch metrics and log-based alarms.
 - AWS Systems Manager integration for operational troubleshooting.
 - Automated remediation for selected incident types.
 - Improved incident dashboards and reporting.
 - Infrastructure as Code using AWS CloudFormation or Terraform.
-- Additional security and least-privilege improvements.
+- Further IAM least-privilege and security improvements.
+- Stronger error handling and resilience for incident-processing failures.
+- Improved handling of concurrent notifications and duplicate events.
+- Full live end-to-end validation of the latest incident creation and recovery workflow.
+- Additional testing for recovery events received when no active incident exists.
 - More advanced incident analysis and reporting.
 
 ---
