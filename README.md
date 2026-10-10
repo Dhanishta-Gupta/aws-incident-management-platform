@@ -18,29 +18,38 @@ The platform is designed to:
 
 ## Architecture
 
-The current incident flow is:
+The platform monitors EC2 CPU utilization and processes CloudWatch alarm notifications through SNS and Lambda. Incident records and active-incident references are stored in Amazon S3.
 
-    EC2 Instance
-         |
-         | CPUUtilization
-         v
-    Amazon CloudWatch
-         |
-         | Alarm: CPU > 70%
-         v
-    CloudWatch Alarm
-         |
-         v
-    Amazon SNS
-       /     \
-      /       \
-    Email    AWS Lambda
-                 |
-                 v
-              Amazon S3
-                 |
-                 v
-          Incident JSON Record
+
+                    EC2 Instance
+                         |
+                         | CPUUtilization
+                         v
+                   Amazon CloudWatch
+                         |
+                         v
+                CloudWatch Alarm
+               /                 \
+         ALARM state            OK state
+               \                 /
+                v               v
+                   Amazon SNS
+                  /           \
+                 v             v
+              Email         AWS Lambda
+                                |
+                     +----------+----------+
+                     |                     |
+                     v                     v
+              Incident Record      Active Reference
+                     |                     |
+                     +----------+----------+
+                                |
+                                v
+                            Amazon S3
+
+Incident lifecycle:
+OPEN -> RESOLVED
 
 ---
 
